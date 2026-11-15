@@ -1,4 +1,5 @@
 """Verify a copied single-file release without Python/Conda search paths."""
+import argparse
 import json
 import os
 from pathlib import Path
@@ -31,7 +32,9 @@ def stop_test_tree(process):
 
 
 def main():
-    source = ROOT / "dist" / "GinaSephora.exe"
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--exe", type=Path, default=ROOT / "dist" / "GinaSephora.exe")
+    source = parser.parse_args().exe.resolve()
     assert pefile.PE(str(source), fast_load=True).OPTIONAL_HEADER.Subsystem == 2
     with tempfile.TemporaryDirectory(prefix="gina-release-test-", ignore_cleanup_errors=True) as temporary:
         root = Path(temporary)

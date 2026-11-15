@@ -4,10 +4,10 @@ import math
 import pandas as pd
 import streamlit as st
 
-from existing_stock import ExistingStockPlan, manual_cap_percent
-from ui.formatting import INTEGER_FORMAT, SCALED_PERCENT_FORMAT, numeric_column_config
-from ui.state import page_state
-from workflows import EXISTING_STOCK
+from gina_sephora.domain.existing_stock import ExistingStockPlan, manual_cap_percent
+from gina_sephora.ui.formatting import INTEGER_FORMAT, SCALED_PERCENT_FORMAT, numeric_column_config
+from gina_sephora.ui.state import page_state
+from gina_sephora.services.workflows import EXISTING_STOCK
 
 
 MANUAL_COLUMN = "手动比例（%）"

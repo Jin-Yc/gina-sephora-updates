@@ -1,10 +1,10 @@
 """Shared allocation result and Excel download presentation."""
 import streamlit as st
 
-from exporting import details_to_excel
-from ui.formatting import INTEGER_FORMAT, numeric_column_config
-from workflows import AllocationMode, NEW_STOCK
-from ui.state import PageState
+from gina_sephora.data_io.exporting import details_to_excel
+from gina_sephora.ui.formatting import INTEGER_FORMAT, numeric_column_config
+from gina_sephora.services.workflows import AllocationMode, NEW_STOCK
+from gina_sephora.ui.state import PageState
 
 
 def render_results(mode: AllocationMode, state: PageState) -> None:

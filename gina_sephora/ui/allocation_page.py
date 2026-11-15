@@ -1,14 +1,14 @@
 """One shared page layout for new-stock and existing-stock allocation."""
 import streamlit as st
 
-from existing_stock import prepare_existing_stock
-from ui.existing_stock_controls import render_existing_stock_controls
-from ui.formatting import numeric_column_config
-from ui.results import render_results
-from ui.rules import EXISTING_STOCK_RULES, NEW_STOCK_RULES
-from ui.state import capture_upload, clear_uploads, invalidate_page, page_state
-from validation import ValidationResult, validate_uploads
-from workflows import AllocationMode, NEW_STOCK, calculate_for_mode
+from gina_sephora.domain.existing_stock import prepare_existing_stock
+from gina_sephora.ui.existing_stock_controls import render_existing_stock_controls
+from gina_sephora.ui.formatting import numeric_column_config
+from gina_sephora.ui.results import render_results
+from gina_sephora.ui.rules import EXISTING_STOCK_RULES, NEW_STOCK_RULES
+from gina_sephora.ui.state import capture_upload, clear_uploads, invalidate_page, page_state
+from gina_sephora.data_io.validation import ValidationResult, validate_uploads
+from gina_sephora.services.workflows import AllocationMode, NEW_STOCK, calculate_for_mode
 
 
 def render_options(mode: AllocationMode) -> tuple[bool, bool]:

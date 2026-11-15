@@ -55,8 +55,8 @@ IDE 的 Python 解释器选择 `.venv\Scripts\python.exe`，无需手动激活�
 
 ## 项目文件
 
-完整目录和职责见 [项目结构](docs/项目结构.md)。`main.py` 负责平台外壳和导航，`app_pages/` 是两个页面入口，`ui/` 是共用界面，`workflows.py` 是业务计算入口，`existing_stock.py` 独立处理现货需求和比例，`ui/existing_stock_controls.py` 展示原生比例编辑表格，以及按需选择 item 查看门店明细。
-原有 `validation.py`、`allocation.py`、`adjustments.py`、`exporting.py` 继续提供业务功能。
+主要源码集中在 `gina_sephora/`：`domain/` 放分货和补货规则，`data_io/` 放输入校验与 Excel 导出，`services/` 串联业务流程，`ui/` 放共用界面与会话状态，`app_pages/` 放两个页面入口。
+根目录的 `main.py` 和 `launcher.py` 提供网页、桌面启动入口；固定更新器及版本配置保留在根目录。完整职责、导入约定和兼容发布方式见 [项目结构](docs/项目结构.md)。
 `docs/` 集中维护规则、结构、变更和验收记录。
 
 ## 基础检查
@@ -127,7 +127,7 @@ python -m venv .venv
 
 ```powershell
 .\.venv\Scripts\python.exe -m pip install -r requirements-build.txt
-.\.venv\Scripts\python.exe -m ty check main.py workflows.py existing_stock.py ui app_pages tests validation.py allocation.py adjustments.py exporting.py desktop_runtime.py launcher.py
+.\.venv\Scripts\python.exe -m ty check main.py gina_sephora tests packaging desktop_runtime.py launcher.py auto_update.py release_layout.py version.py
 .\.venv\Scripts\python.exe -m unittest discover -s tests -v
 powershell -ExecutionPolicy Bypass -File .\build.ps1
 .\.venv\Scripts\python.exe -u packaging\verify_release.py

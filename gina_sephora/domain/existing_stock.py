@@ -5,8 +5,8 @@ from typing import Callable, Mapping
 
 import pandas as pd
 
-from allocation import AllocationResult, dispatch_warehouses
-from validation import ValidationResult
+from gina_sephora.domain.allocation import AllocationResult, dispatch_warehouses
+from gina_sephora.data_io.validation import ValidationResult
 
 
 DEMAND_FIELDS = ["Mini", "Sales qty", "Total Stock", "Order Quantity"]

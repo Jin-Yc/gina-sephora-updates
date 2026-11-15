@@ -2,9 +2,9 @@
 from dataclasses import dataclass
 from typing import Callable
 
-from allocation import AllocationResult, calculate_allocation
-from existing_stock import ExistingStockPlan, calculate_existing_allocation, prepare_existing_stock
-from validation import ValidationResult
+from gina_sephora.domain.allocation import AllocationResult, calculate_allocation
+from gina_sephora.domain.existing_stock import ExistingStockPlan, calculate_existing_allocation, prepare_existing_stock
+from gina_sephora.data_io.validation import ValidationResult
 
 
 @dataclass(frozen=True)

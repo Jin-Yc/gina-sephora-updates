@@ -9,10 +9,10 @@ from openpyxl import load_workbook
 import pandas as pd
 from streamlit.testing.v1 import AppTest
 
-from existing_stock import calculate_existing_allocation, demand_targets, prepare_existing_stock
+from gina_sephora.domain.existing_stock import calculate_existing_allocation, demand_targets, prepare_existing_stock
 from tests.fixtures import existing_inputs
-from validation import validate_uploads
-from workflows import EXISTING_STOCK, calculate_for_mode
+from gina_sephora.data_io.validation import validate_uploads
+from gina_sephora.services.workflows import EXISTING_STOCK, calculate_for_mode
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -98,7 +98,7 @@ class ExistingStockTests(unittest.TestCase):
         self.assertEqual(4, allocation.summary.iloc[0]["剩余库存"])
 
     def test_pending_cdc_does_not_publish_false_shortages_or_final_quantities(self):
-        with patch("existing_stock.dispatch_warehouses", side_effect=ValueError("test timeout")):
+        with patch("gina_sephora.domain.existing_stock.dispatch_warehouses", side_effect=ValueError("test timeout")):
             allocation = calculate_existing_allocation(self.plan())
         self.assertTrue(allocation.summary["实际出库合计"].isna().all())
         self.assertTrue(allocation.summary["缺货量合计"].isna().all())
@@ -111,7 +111,7 @@ class ExistingStockTests(unittest.TestCase):
         result = validate_uploads(master, sales, existing_stock=True, use_benchmark=True, use_dm=True)
         self.assertFalse(result.errors, result.errors)
         self.assertNotIn("benchmark", result.tables["SKU"])
-        with patch("allocation.apply_dm_adjustment", side_effect=AssertionError("existing stock must not call DM")):
+        with patch("gina_sephora.domain.allocation.apply_dm_adjustment", side_effect=AssertionError("existing stock must not call DM")):
             output = calculate_for_mode(EXISTING_STOCK, result, use_benchmark=True, use_dm=True)
         self.assertNotIn("DM 加量", output.details)
         for field_index, bad_value in [(2, ""), (2, -1), (3, 1.5), (4, -1), (5, -1), (5, "nan")]:
@@ -140,7 +140,7 @@ class ExistingStockTests(unittest.TestCase):
 class ExistingStockUITests(unittest.TestCase):
     def setUp(self):
         self.app = AppTest.from_file(str(ROOT / "main.py"), default_timeout=30).run()
-        self.app.switch_page("app_pages/existing_stock.py").run()
+        self.app.switch_page("gina_sephora/app_pages/existing_stock.py").run()
         self.master, self.sales = existing_inputs()
         self.upload(self.master, self.sales)
 
@@ -155,7 +155,7 @@ class ExistingStockUITests(unittest.TestCase):
         self.assertFalse(self.app.exception, [item.message for item in self.app.exception])
 
     def edit(self, rows):
-        from ui.existing_stock_controls import MANUAL_COLUMN
+        from gina_sephora.ui.existing_stock_controls import MANUAL_COLUMN
         editor = self.app.data_editor[0]
         assert editor.key is not None
         current = self.app.session_state[editor.key]
@@ -171,7 +171,7 @@ class ExistingStockUITests(unittest.TestCase):
         self.assertHealthy()
 
     def test_native_table_bulk_and_repeated_edits_cap_and_restore_automatic(self):
-        from ui.existing_stock_controls import MANUAL_COLUMN
+        from gina_sephora.ui.existing_stock_controls import MANUAL_COLUMN
         table = self.app.data_editor[0].value
         self.assertEqual(MANUAL_COLUMN, table.columns[-1])
         self.assertEqual(["A", "B"], table["Material"].tolist())
@@ -210,7 +210,7 @@ class ExistingStockUITests(unittest.TestCase):
         self.assertEqual([0, 8], self.state.allocation.summary["目标量合计"].tolist())
 
     def test_table_and_export_survive_navigation_then_file_change_resets(self):
-        from ui.existing_stock_controls import MANUAL_COLUMN
+        from gina_sephora.ui.existing_stock_controls import MANUAL_COLUMN
         self.edit({0: 70.0, 1: 80.0})
         self.calculate()
         book = load_workbook(BytesIO(self.state.excel), read_only=True)
@@ -220,9 +220,9 @@ class ExistingStockUITests(unittest.TestCase):
         self.assertEqual("001", values[1][values[0].index("Store")])
         self.assertTrue(any("缺失" in str(row[values[0].index("状态")]) for row in values[1:]))
         book.close()
-        with patch("ui.allocation_page.calculate_for_mode", side_effect=AssertionError("must not recalculate")):
-            self.app.switch_page("app_pages/new_stock.py").run()
-            self.app.switch_page("app_pages/existing_stock.py").run()
+        with patch("gina_sephora.ui.allocation_page.calculate_for_mode", side_effect=AssertionError("must not recalculate")):
+            self.app.switch_page("gina_sephora/app_pages/new_stock.py").run()
+            self.app.switch_page("gina_sephora/app_pages/existing_stock.py").run()
             self.assertHealthy()
         self.assertEqual([70.0, 80.0], self.app.data_editor[0].value[MANUAL_COLUMN].tolist())
         self.assertEqual(1, len(self.app.download_button))

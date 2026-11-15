@@ -6,9 +6,9 @@ from unittest.mock import patch
 from openpyxl import load_workbook
 import pandas as pd
 
-from adjustments import WarehouseLimit
-from allocation import DMAllocationError, calculate_allocation, dispatch_warehouses
-from exporting import details_to_excel
+from gina_sephora.domain.adjustments import WarehouseLimit
+from gina_sephora.domain.allocation import DMAllocationError, calculate_allocation, dispatch_warehouses
+from gina_sephora.data_io.exporting import details_to_excel
 
 
 def fixture(stock=100, dm=315):
@@ -110,7 +110,7 @@ class DMInventoryTests(unittest.TestCase):
         self.assertEqual(1, zero["实际出库量"])
         self.assert_conservation(allocation)
         sales.loc[sales["Store"].eq("002"), "Sales qty"] = -1
-        with patch("allocation.dispatch_warehouses", side_effect=AssertionError("must not dispatch")):
+        with patch("gina_sephora.domain.allocation.dispatch_warehouses", side_effect=AssertionError("must not dispatch")):
             allocation = calculate_allocation(sku, stores, sales, ["CDC2", "CDC3"], use_dm=True)
         self.assertEqual("负销量待确认", allocation.summary.iloc[0]["状态"])
         self.assertEqual(100, allocation.summary.iloc[0]["剩余库存"])
@@ -140,7 +140,7 @@ class DMInventoryTests(unittest.TestCase):
         with self.assertRaises(DMAllocationError):
             dispatch_warehouses({"001": 2}, {"001": "CDC2"}, {"CDC2": 0, "CDC3": 1, "CDC5": 1},
                                 minimums={"001": 2})
-        with patch("allocation.dispatch_warehouses", side_effect=DMAllocationError("DM cannot be met")):
+        with patch("gina_sephora.domain.allocation.dispatch_warehouses", side_effect=DMAllocationError("DM cannot be met")):
             allocation = self.calculate()
         self.assertIn("DM 出库受限", allocation.summary.iloc[0]["状态"])
         self.assertEqual(0, allocation.summary.iloc[0]["实际出库合计"])
@@ -149,7 +149,7 @@ class DMInventoryTests(unittest.TestCase):
         self.assert_conservation(allocation)
 
     def test_unconfirmed_dispatch_has_no_claimed_dm_or_shortage(self):
-        with patch("allocation.dispatch_warehouses", side_effect=ValueError("timeout")):
+        with patch("gina_sephora.domain.allocation.dispatch_warehouses", side_effect=ValueError("timeout")):
             allocation = self.calculate()
         self.assertEqual("出库待确认", allocation.summary.iloc[0]["状态"])
         self.assertTrue(allocation.details["DM 实际出库"].isna().all())

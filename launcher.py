@@ -162,9 +162,9 @@ def launch() -> None:
 
 def verify_bundle(master_path: str, sales_path: str, report_path: str) -> None:
     """Release check mode exercises actual packaged parsers, MILP and Excel export."""
-    from allocation import calculate_allocation
-    from exporting import details_to_excel
-    from validation import validate_uploads
+    from gina_sephora.domain.allocation import calculate_allocation
+    from gina_sephora.data_io.exporting import details_to_excel
+    from gina_sephora.data_io.validation import validate_uploads
 
     result = validate_uploads(Path(master_path).read_bytes(), Path(sales_path).read_bytes(),
                               use_benchmark=True, use_dm=True)

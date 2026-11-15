@@ -8,7 +8,7 @@ import pandas as pd
 from scipy.optimize import Bounds, LinearConstraint, milp
 from scipy.sparse import coo_matrix
 
-from adjustments import apply_dm_adjustment, dm_requirements, limit_warehouse_stocks
+from gina_sephora.domain.adjustments import apply_dm_adjustment, dm_requirements, limit_warehouse_stocks
 
 
 @dataclass

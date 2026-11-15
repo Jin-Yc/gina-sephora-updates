@@ -4,10 +4,10 @@ from dataclasses import dataclass, field
 import pandas as pd
 import streamlit as st
 
-from allocation import AllocationResult
-from existing_stock import ExistingStockPlan
-from validation import ValidationResult
-from workflows import AllocationMode
+from gina_sephora.domain.allocation import AllocationResult
+from gina_sephora.domain.existing_stock import ExistingStockPlan
+from gina_sephora.data_io.validation import ValidationResult
+from gina_sephora.services.workflows import AllocationMode
 
 
 @dataclass(frozen=True)

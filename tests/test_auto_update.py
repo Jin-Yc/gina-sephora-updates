@@ -1,5 +1,6 @@
 """Exercise real update archives, atomic activation and safe offline fallback."""
 import hashlib
+import ast
 import importlib.util
 import json
 from pathlib import Path
@@ -13,7 +14,7 @@ import zipfile
 
 import auto_update
 from auto_update import read_json, select_app
-from release_layout import BOOTSTRAP_FILES, allowed_source, app_files, version_tuple
+from release_layout import BOOTSTRAP_FILES, allowed_source, version_tuple
 
 ROOT = Path(__file__).resolve().parents[1]
 spec = importlib.util.spec_from_file_location("release_tools", ROOT / "packaging" / "release_tools.py")
@@ -30,7 +31,7 @@ class AutoUpdateTests(unittest.TestCase):
         self.root = Path(self.temporary.name)
         self.source = self.root / "source"
         self.source.mkdir()
-        for path in app_files(ROOT):
+        for path, _ in release_tools.source_files(ROOT):
             target = self.source / path.relative_to(ROOT)
             target.parent.mkdir(parents=True, exist_ok=True)
             shutil.copyfile(path, target)
@@ -152,6 +153,24 @@ class AutoUpdateTests(unittest.TestCase):
         self.assertGreater(version_tuple("2.10.0"), version_tuple("2.9.9"))
         for name in ("../x.py", "ui/../../x.py", "ui\\x.py", "launcher.py", "CON.py", "input.xlsx"):
             self.assertFalse(allowed_source(name), name)
+
+    def test_package_layout_remains_compatible_with_existing_exes(self):
+        with zipfile.ZipFile(self.release / "GinaSephora-app-2.1.1.zip") as bundle:
+            names = set(bundle.namelist())
+            self.assertTrue({"allocation.py", "validation.py", "workflows.py",
+                             "ui/allocation_page.py", "app_pages/existing_stock.py"}.issubset(names))
+            self.assertFalse(any(name.startswith("gina_sephora/") for name in names))
+            main = bundle.read("main.py").decode("utf-8")
+            self.assertIn('"app_pages/existing_stock.py"', main)
+            for name in names - {"release.json"}:
+                tree = ast.parse(bundle.read(name), filename=name)
+                self.assertFalse(any(isinstance(node, ast.ImportFrom) and node.module and
+                                     node.module.startswith("gina_sephora") for node in ast.walk(tree)), name)
+
+    def test_builder_rejects_old_and_new_module_name_collisions(self):
+        (self.source / "allocation.py").write_text("pass\n", encoding="utf-8")
+        with self.assertRaisesRegex(ValueError, "路径重复"):
+            release_tools.prepare_bundle(self.source, self.root / "collision")
 
 
 if __name__ == "__main__":

@@ -10,10 +10,10 @@ from version import APP_VERSION
 st.set_page_config(page_title=f"分货工具 v{APP_VERSION}", page_icon="📁", layout="wide")
 page = st.navigation(
     [
-        st.Page("app_pages/new_stock.py", title="新货分货", default=True,
+        st.Page("gina_sephora/app_pages/new_stock.py", title="新货分货", default=True,
                 icon=":material/inventory_2:",
                 help="沿用 v1.0 新货规则，上传文件、检查并计算分货，导出 CDC 明细。"),
-        st.Page("app_pages/existing_stock.py", title="现货分货", url_path="existing_stock",
+        st.Page("gina_sephora/app_pages/existing_stock.py", title="现货分货", url_path="existing_stock",
                 icon=":material/warehouse:",
                 help="按各店实际需求补货，查看 item 库存和需求，调整比例并导出 CDC 出库明细。"),
     ],

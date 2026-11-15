@@ -7,8 +7,8 @@ from unittest.mock import patch
 from openpyxl import Workbook, load_workbook
 from streamlit.testing.v1 import AppTest
 
-from allocation import calculate_allocation
-from validation import validate_uploads
+from gina_sephora.domain.allocation import calculate_allocation
+from gina_sephora.data_io.validation import validate_uploads
 from tests.fixtures import existing_inputs
 
 
@@ -47,7 +47,7 @@ class PlatformTests(unittest.TestCase):
         self.assertHealthy()
 
     def switch(self, page):
-        self.app.switch_page(f"app_pages/{page}.py").run()
+        self.app.switch_page(f"gina_sephora/app_pages/{page}.py").run()
         self.assertHealthy()
 
     def test_shared_layout_and_independent_options(self):
@@ -66,7 +66,7 @@ class PlatformTests(unittest.TestCase):
     def test_existing_stock_demand_then_separate_calculation(self):
         self.switch("existing_stock")
         self.upload("existing")
-        with patch("ui.allocation_page.calculate_for_mode", side_effect=AssertionError("must not calculate")):
+        with patch("gina_sephora.ui.allocation_page.calculate_for_mode", side_effect=AssertionError("must not calculate")):
             self.app.button(key="existing_stock_check").click().run()
         self.assertHealthy()
         self.assertTrue(self.app.success)
@@ -108,7 +108,7 @@ class PlatformTests(unittest.TestCase):
         book = load_workbook(BytesIO(state.excel), read_only=True)
         self.assertEqual(4, book.active.max_row)
         book.close()
-        with patch("ui.allocation_page.calculate_for_mode", side_effect=AssertionError("must not recalculate")):
+        with patch("gina_sephora.ui.allocation_page.calculate_for_mode", side_effect=AssertionError("must not recalculate")):
             self.switch("existing_stock")
             self.upload("existing")
             self.app.button(key="existing_stock_check").click().run()
