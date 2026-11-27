@@ -32,7 +32,9 @@ def details_to_excel(details: pd.DataFrame) -> bytes:
                 # beginning with '='. User data must not become an Excel formula.
                 cell.data_type = "s"
             column = columns[column_number - 1]
-            if column in {"SOB", "自动比例", "实际使用比例"}:
+            if column == "CDC 库存合计":
+                cell.number_format = "#,##0"
+            elif column in {"SOB", "自动比例", "实际使用比例"}:
                 cell.number_format = "0.00%"
             elif column in integer_columns:
                 cell.number_format = "0"

@@ -298,6 +298,7 @@ def calculate_allocation(
                 "销量来源货号": sales_material, "分货依据": source_column,
                 "Store": store, "curstatus": store_statuses[store],
                 "storename": store_names[store], "优先 CDC": preferred[store],
+                "CDC 库存合计": original_stock,
                 "Sales qty": float(weights[store]), "有效门店总销量": float(total),
                 "SOB": 0.0 if new else float(weights[store] / total) if can_calculate else None,
                 "理论分货量": 0.0 if new else float(weights[store] * regular_stock / total) if can_calculate and not paused else None,

@@ -160,6 +160,7 @@ def calculate_existing_allocation(
                 status = "缺货" if actual is not None and actual < target else "跨仓调货" if donor else "正常分配"
             row = {"Material": material, "商品名称": item["商品名称"], "Store": store,
                    "curstatus": source["curstatus"], "storename": source["storename"], "优先 CDC": preferred[store],
+                   "CDC 库存合计": int(item["总库存"]),
                    **{field: source[field] for field in DEMAND_FIELDS},
                    "原始需求量": source["原始需求量"], "需求量": demand if complete else None,
                    "自动比例": item["自动比例"], "实际使用比例": float(ratio),
