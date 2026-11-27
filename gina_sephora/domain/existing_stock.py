@@ -55,7 +55,7 @@ def prepare_existing_stock(result: ValidationResult) -> ExistingStockPlan:
         values = pd.to_numeric(sales[field], errors="coerce")
         invalid = values.isna() | values.isin([float("inf"), float("-inf")]) | values.mod(1).ne(0)
         invalid |= sales[field].map(lambda value: isinstance(value, bool))
-        if field != "Sales qty":
+        if field not in {"Sales qty", "Total Stock"}:
             invalid |= values.lt(0)
         if invalid.any():
             raise ValueError(f"现货 {field} 有无效数量，请重新检查文件。")

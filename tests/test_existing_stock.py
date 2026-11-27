@@ -58,6 +58,51 @@ class ExistingStockTests(unittest.TestCase):
         allocation = calculate_existing_allocation(plan, percentages={"A": 70})
         self.assertEqual([4, 3], allocation.details.query("Material == 'A'")["allocation"].dropna().tolist())
 
+    def test_negative_total_stock_enters_original_formula_and_export(self):
+        for header in ("Total Stock", "Total Stcok"):
+            with self.subTest(header=header):
+                plan = self.plan(items=[["A", "A", 8, 6, 2, 0]], stock_header=header, records=[
+                    ["A", "001", 5, 3, -2, 1],  # 5 + 3 - (-2) - 1 = 9.
+                    ["A", "002", 4, 1, 0, 1],   # Demand 4; combined demand 13.
+                ])
+                self.assertEqual(13, plan.items.iloc[0]["需求量合计"])
+                self.assertAlmostEqual(8 / 13, plan.items.iloc[0]["自动比例"])
+                output = calculate_existing_allocation(plan)
+                rows = output.details.set_index("Store")
+                self.assertEqual(-2, rows.loc["001", "Total Stock"])
+                self.assertEqual(9, rows.loc["001", "原始需求量"])
+                self.assertEqual([6, 2], rows.loc[["001", "002"], "allocation"].tolist())
+                self.assertTrue(pd.isna(rows.loc["003", "Total Stock"]))
+                self.assertTrue(pd.isna(rows.loc["003", "最终分配量"]))
+                manual = calculate_existing_allocation(plan, percentages={"A": 50})
+                self.assertEqual(6, manual.summary.iloc[0]["实际出库合计"])
+                self.assertEqual(2, manual.summary.iloc[0]["剩余库存"])
+                from gina_sephora.data_io.exporting import details_to_excel
+                book = load_workbook(BytesIO(details_to_excel(output.details)))
+                try:
+                    sheet = book.active
+                    columns = [cell.value for cell in sheet[1]]
+                    self.assertEqual(-2, sheet.cell(2, columns.index("Total Stock") + 1).value)
+                    self.assertEqual(9, sheet.cell(2, columns.index("需求量") + 1).value)
+                finally:
+                    book.close()
+
+    def test_total_stock_still_rejects_blank_fractional_and_nonfinite_values(self):
+        for value in ("", " ", 1.5, -1.5, "nan", "inf", "-inf", "not a number"):
+            with self.subTest(value=value):
+                validation = validate_uploads(*existing_inputs(records=[["A", "001", 5, 2, value, 1]]),
+                                              existing_stock=True)
+                self.assertTrue(any("Total Stock" in error for error in validation.errors), validation.errors)
+
+    def test_backend_signed_stock_guard_keeps_other_quantity_constraints(self):
+        for field, value in (("Total Stock", -1.5), ("Total Stock", None), ("Total Stock", True),
+                             ("Total Stock", float("inf")), ("Mini", -1), ("Order Quantity", -1)):
+            validation = validate_uploads(*existing_inputs(), existing_stock=True)
+            validation.tables["销售数据"][field] = validation.tables["销售数据"][field].astype(object)
+            validation.tables["销售数据"].loc[2, field] = value
+            with self.subTest(field=field, value=value), self.assertRaises(ValueError):
+                prepare_existing_stock(validation)
+
     def test_backend_rejects_overrides_above_auto_and_invalid_values(self):
         plan = self.plan()
         for value in [80.01, 100, -1, float("nan"), float("inf"), True]:
@@ -114,7 +159,7 @@ class ExistingStockTests(unittest.TestCase):
         with patch("gina_sephora.domain.allocation.apply_dm_adjustment", side_effect=AssertionError("existing stock must not call DM")):
             output = calculate_for_mode(EXISTING_STOCK, result, use_benchmark=True, use_dm=True)
         self.assertNotIn("DM 加量", output.details)
-        for field_index, bad_value in [(2, ""), (2, -1), (3, 1.5), (4, -1), (5, -1), (5, "nan")]:
+        for field_index, bad_value in [(2, ""), (2, -1), (3, 1.5), (4, 1.5), (5, -1), (5, "nan")]:
             row = ["A", "001", 5, 2, 1, 1]
             row[field_index] = bad_value
             with self.subTest(field=field_index, value=bad_value):
@@ -169,6 +214,21 @@ class ExistingStockUITests(unittest.TestCase):
     def calculate(self):
         self.app.button(key="existing_stock_calculate").click().run()
         self.assertHealthy()
+
+    def test_negative_total_stock_upload_calculate_and_reject_blank_replacement(self):
+        self.upload(*existing_inputs(items=[["A", "A", 8, 6, 2, 0]], records=[
+            ["A", "001", 5, 3, -2, 1], ["A", "002", 4, 1, 0, 1],
+        ]))
+        self.assertFalse(self.state.validation.errors)
+        self.assertEqual(13, self.state.plan.items.iloc[0]["需求量合计"])
+        self.calculate()
+        self.assertEqual(8, self.state.allocation.summary.iloc[0]["实际出库合计"])
+        self.assertTrue(self.app.download_button)
+        self.upload(*existing_inputs(records=[["A", "001", 5, 3, "", 1]]))
+        self.assertTrue(any("Total Stock" in error for error in self.state.validation.errors))
+        self.assertIsNone(self.state.plan)
+        self.assertIsNone(self.state.allocation)
+        self.assertFalse(self.app.download_button)
 
     def test_native_table_bulk_and_repeated_edits_cap_and_restore_automatic(self):
         from gina_sephora.ui.existing_stock_controls import MANUAL_COLUMN

@@ -259,8 +259,9 @@ def _validate_sales(data: bytes, result: ValidationResult, *, use_benchmark=Fals
         return
     _check_ids(sales, ["Material", "Store"], "销售数据", result)
     if existing_stock:
-        _check_numbers(sales, ["Mini", "Total Stock", "Order Quantity"], "销售数据", result, inventory=True)
-        _check_existing_sales_quantity(sales, result)
+        _check_numbers(sales, ["Mini", "Order Quantity"], "销售数据", result, inventory=True)
+        for column in ("Sales qty", "Total Stock"):
+            _check_existing_signed_quantity(sales, column, result)
     else:
         _check_numbers(sales, ["Sales qty"], "销售数据", result)
     duplicates = sales.duplicated(["Material", "Store"], keep=False)
@@ -289,15 +290,15 @@ def _validate_sales(data: bytes, result: ValidationResult, *, use_benchmark=Fals
             )
 
 
-def _check_existing_sales_quantity(sales, result):
-    values = pd.to_numeric(sales["Sales qty"], errors="coerce")
+def _check_existing_signed_quantity(sales, column, result):
+    values = pd.to_numeric(sales[column], errors="coerce")
     invalid = values.isna() | values.isin([float("inf"), float("-inf")])
-    invalid |= sales["Sales qty"].map(lambda value: isinstance(value, bool))
+    invalid |= sales[column].map(lambda value: isinstance(value, bool))
     invalid |= values.mod(1).ne(0)
     if invalid.any():
-        result.errors.append(f"现货 Sales qty 必须为整数（允许负销量），原表第 {_rows(invalid)} 行。")
-    sales["Sales qty"] = values
-    if values.lt(0).any():
+        result.errors.append(f"现货 {column} 必须为整数（允许负数，不能为空），原表第 {_rows(invalid)} 行。")
+    sales[column] = values
+    if column == "Sales qty" and values.lt(0).any():
         result.warnings.append("现货数据包含负销量，已按确认规则直接参与需求公式计算，需求小于 0 时按 0。")
 
 
