@@ -13,6 +13,7 @@ runtime_launcher = root / "build" / "runtime-entry" / "launcher.py"
 runtime_launcher.parent.mkdir(parents=True, exist_ok=True)
 runtime_launcher.write_bytes(payload_source((root / "launcher.py").read_bytes()))
 datas = collect_data_files("streamlit", excludes=[".agents/**", "**/.agents/**", "testing/**", "hello/**"])
+datas += collect_data_files("certifi")
 datas += copy_metadata("streamlit", recursive=True)
 datas += [(str(payload / name), str(Path("bundled_app") / Path(name).parent))
           for name in metadata["files"]]
@@ -25,7 +26,8 @@ hiddenimports += collect_submodules("uvicorn")
 
 a = Analysis(
     [str(runtime_launcher)], pathex=[str(root)], datas=datas, binaries=[],
-    hiddenimports=hiddenimports, hookspath=[], hooksconfig={}, runtime_hooks=[],
+    hiddenimports=hiddenimports, hookspath=[], hooksconfig={},
+    runtime_hooks=[str(root / "packaging" / "runtime_certificates.py")],
     excludes=["tkinter", "matplotlib", "IPython", "pytest", "ty", "streamlit.testing"],
     noarchive=False,
 )
